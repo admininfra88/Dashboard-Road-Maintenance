@@ -1,136 +1,127 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Dashboard Cost Ratio Road Maintenance</title>
-
-  <!-- SheetJS -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard Road Maintenance</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-  <!-- Chart.js v3 -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-
-  <!-- Plugin datalabels -->
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-
   <style>
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f5f6fa;
+      font-family: "Segoe UI", sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
     }
-    h1 { text-align: center; }
-    #chartContainer {
+    h1 {
+      margin-bottom: 30px;
+    }
+    .chart-container {
       width: 90%;
-      margin: 30px auto;
-    }
-    table {
-      border-collapse: collapse;
-      margin: 0 auto;
+      max-width: 1000px;
+      margin: auto;
       background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px 12px;
-    }
-    th { background: #eee; }
   </style>
 </head>
 <body>
-  <h1>📊 Dashboard Cost Ratio Road Maintenance</h1>
-  <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" />
-  
-  <div id="chartContainer">
+
+  <h1>📊 Dashboard Road Maintenance</h1>
+  <div class="chart-container">
     <canvas id="myChart"></canvas>
   </div>
 
-  <table id="dataTable"></table>
-
   <script>
-    const fileInput = document.getElementById('fileInput');
-    const dataTable = document.getElementById('dataTable');
-    let chart;
+    async function loadExcelAndRender() {
+      try {
+        // URL file Excel di repo GitHub (ganti dengan username & repo kamu)
+        const fileUrl = 'https://raw.githubusercontent.com/admininfra88/Dashboard-Road-Maintenance/main/Data1.xlsx';
 
-    fileInput.addEventListener('change', handleFile);
+        const response = await fetch(fileUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
 
-    function handleFile(event) {
-      const file = event.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
+        // Ambil sheet pertama
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
 
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
+        // Konversi ke JSON
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-        renderTable(jsonData);
-        renderChart(jsonData, sheetName);
-      };
-      reader.readAsArrayBuffer(file);
-    }
 
-    function renderTable(data) {
-      let html = '<tr>';
-      data[0].forEach(h => html += `<th>${h}</th>`);
-      html += '</tr>';
-      for (let i = 1; i < data.length; i++) {
-        html += '<tr>';
-        data[i].forEach(c => html += `<td>${c}</td>`);
-        html += '</tr>';
-      }
-      dataTable.innerHTML = html;
-    }
+        // Asumsikan baris pertama adalah header
+        const [header, ...rows] = jsonData;
+        const bulanIndex = header.indexOf('Bulan');
+        const planIndex = header.indexOf('Plan');
+        const aktualIndex = header.indexOf('Aktual');
 
-    function renderChart(data, sheetName) {
-      const labels = data.slice(1).map(row => row[0]);
-      const penjualan = data.slice(1).map(row => Number(row[1]) || 0);
-      const pengeluaran = data.slice(1).map(row => Number(row[2]) || 0);
+        const labels = [];
+        const planData = [];
+        const aktualData = [];
 
-      // 🔸 Ambil judul dari baris pertama kolom pertama (jika ada)
-      // Contoh: di cell A1 tertulis "Grafik Penjualan vs Pengeluaran"
-      const customTitle = data[0][0] && isNaN(data[0][0]) ? data[0][0] : `Dashboard: ${sheetName}`;
+        rows.forEach(row => {
+          labels.push(row[bulanIndex]);
+          planData.push(parseFloat(row[planIndex]) || 0);
+          aktualData.push(parseFloat(row[aktualIndex]) || 0);
+        });
 
-      const ctx = document.getElementById('myChart').getContext('2d');
-
-      if (chart) chart.destroy();
-
-      chart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: data[0][1] || 'Penjualan',
-              data: penjualan,
-              backgroundColor: '#4CAF50'
+        // Buat grafik kombinasi
+        const ctx = document.getElementById('myChart').getContext('2d');
+        new Chart(ctx, {
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                type: 'line',
+                label: 'Plan',
+                data: planData,
+                borderColor: 'blue',
+                backgroundColor: 'blue',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: false,
+                yAxisID: 'y'
+              },
+              {
+                type: 'bar',
+                label: 'Aktual',
+                data: aktualData,
+                backgroundColor: 'orange',
+                yAxisID: 'y'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              title: {
+                display: true,
+                text: 'Perbandingan Plan vs Aktual',
+                font: { size: 18 }
+              },
+              legend: {
+                display: true,
+                position: 'top'
+              }
             },
-            {
-              label: data[0][2] || 'Pengeluaran',
-              data: pengeluaran,
-              backgroundColor: '#F44336'
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { position: 'top' },
-            title: { 
-              display: true, 
-              text: customTitle 
-            },
-            datalabels: {
-              anchor: 'end',
-              align: 'end',
-              color: '#000',
-              font: { weight: 'bold' },
-              formatter: (value) => value.toLocaleString('id-ID')
+            scales: {
+              y: {
+                beginAtZero: true
+              }
             }
           }
-        },
-        plugins: [ChartDataLabels]
-      });
+        });
+
+      } catch (error) {
+        console.error('Gagal load file Excel:', error);
+        alert('Gagal memuat data Excel. Pastikan file Data1.xlsx sudah di-upload ke repo.');
+      }
     }
+
+    loadExcelAndRender();
   </script>
 </body>
 </html>
