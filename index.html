@@ -3,13 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <title>Dashboard Cost Ratio Road Maintenance 2025</title>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Chart.js Data Labels Plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+  <!-- XLSX for reading Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 20px;
       background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
     }
     h1 {
       text-align: center;
@@ -19,7 +28,7 @@
       width: 90%;
       max-width: 1000px;
       margin: 20px auto;
-      background: #fff;
+      background: white;
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -33,6 +42,7 @@
 <body>
 
   <h1>Dashboard Cost Ratio Road Maintenance 2025</h1>
+
   <div class="chart-container">
     <canvas id="barChart"></canvas>
   </div>
@@ -85,13 +95,16 @@
             legend: {
               position: 'top'
             },
-            tooltip: {
-              enabled: true
-            },
             datalabels: {
               anchor: 'end',
               align: 'top',
-              formatter: Math.round
+              color: '#000',
+              font: {
+                weight: 'bold'
+              },
+              formatter: function(value) {
+                return value;
+              }
             }
           },
           scales: {
@@ -100,15 +113,11 @@
             }
           }
         },
-        plugins: [ChartDataLabels]
+        plugins: [ChartDataLabels] // ini kunci supaya angka muncul
       });
     }
 
-    // Load plugin Chart.js DataLabels
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0';
-    script.onload = loadExcelData;
-    document.head.appendChild(script);
+    loadExcelData();
   </script>
 
 </body>
