@@ -5,7 +5,6 @@
   <title>Dashboard Road Maintenance</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- ✅ Tambahkan plugin Chart.js DataLabels -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <style>
     body {
@@ -16,7 +15,7 @@
     h2 {
       text-align: center;
     }
-    #chartContainer {
+    .chart-box {
       width: 90%;
       max-width: 900px;
       margin: 30px auto;
@@ -31,8 +30,14 @@
 
   <!-- ===================== Grafik Cost Ratio 2025 ===================== -->
   <h2>Cost Ratio Road Maintenance 2025</h2>
-  <div id="chartContainer">
-    <canvas id="barChart"></canvas>
+  <div class="chart-box">
+    <canvas id="costChart"></canvas>
+  </div>
+
+  <!-- ===================== Grafik Fuel Ratio 2025 ===================== -->
+  <h2>Fuel Ratio 2025</h2>
+  <div class="chart-box">
+    <canvas id="fuelChart"></canvas>
   </div>
 
   <script>
@@ -42,28 +47,29 @@
       .then(response => response.arrayBuffer())
       .then(data => {
         const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-        const labels = json.slice(1).map(row => row[0]);
-        const planData = json.slice(1).map(row => row[1]);
-        const actualData = json.slice(1).map(row => row[2]);
+        // ===================== Sheet 1: Cost Ratio =====================
+        const sheetCost = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonCost = XLSX.utils.sheet_to_json(sheetCost, { header: 1 });
 
-        const ctx = document.getElementById('barChart').getContext('2d');
-        new Chart(ctx, {
+        const labelsCost = jsonCost.slice(1).map(row => row[0]);
+        const planCost = jsonCost.slice(1).map(row => row[1]);
+        const actualCost = jsonCost.slice(1).map(row => row[2]);
+
+        const ctxCost = document.getElementById('costChart').getContext('2d');
+        new Chart(ctxCost, {
           type: 'bar',
           data: {
-            labels: labels,
+            labels: labelsCost,
             datasets: [
               {
                 label: 'Plan',
-                data: planData,
+                data: planCost,
                 backgroundColor: 'rgba(54, 162, 235, 0.7)',
               },
               {
                 label: 'Aktual',
-                data: actualData,
+                data: actualCost,
                 backgroundColor: 'rgba(255, 132, 99, 0.7)',
               }
             ]
@@ -73,84 +79,69 @@
             plugins: {
               legend: { position: 'top' },
               tooltip: { enabled: true },
+              datalabels: {
+                anchor: 'end',
+                align: 'end',
+                color: '#000',
+                font: {
+                  weight: 'bold'
+                }
+              }
             },
             scales: {
-              y: {
-                beginAtZero: true
-              }
+              y: { beginAtZero: true }
             }
           },
-          plugins: [{
-            id: 'dataLabels',
-            afterDatasetsDraw(chart) {
-              const {ctx} = chart;
-              chart.data.datasets.forEach((dataset, i) => {
-                const meta = chart.getDatasetMeta(i);
-                meta.data.forEach((bar, index) => {
-                  const value = dataset.data[index];
-                  ctx.fillStyle = '#000';
-                  ctx.font = '12px Arial';
-                  ctx.textAlign = 'center';
-                  ctx.fillText(value, bar.x, bar.y - 5);
-                });
-              });
+          plugins: [ChartDataLabels]
+        });
+
+        // ===================== Sheet 2: Fuel Ratio =====================
+        const sheetFuel = workbook.Sheets[workbook.SheetNames[1]];
+        const jsonFuel = XLSX.utils.sheet_to_json(sheetFuel, { header: 1 });
+
+        const labelsFuel = jsonFuel.slice(1).map(row => row[0]);
+        const planFuel = jsonFuel.slice(1).map(row => row[1]);
+        const actualFuel = jsonFuel.slice(1).map(row => row[2]);
+
+        const ctxFuel = document.getElementById('fuelChart').getContext('2d');
+        new Chart(ctxFuel, {
+          type: 'bar',
+          data: {
+            labels: labelsFuel,
+            datasets: [
+              {
+                label: 'Plan',
+                data: planFuel,
+                backgroundColor: '#4A90E2'
+              },
+              {
+                label: 'Aktual',
+                data: actualFuel,
+                backgroundColor: '#F77E70'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: 'top' },
+              tooltip: { enabled: true },
+              datalabels: {
+                anchor: 'end',
+                align: 'end',
+                color: '#000',
+                font: {
+                  weight: 'bold'
+                }
+              }
+            },
+            scales: {
+              y: { beginAtZero: true }
             }
-          }]
+          },
+          plugins: [ChartDataLabels]
         });
       });
-  </script>
-
-  <!-- ===================== Grafik Fuel Ratio 2025 ===================== -->
-  <div id="chartContainer">
-    <h2 style="font-weight: bold;">Fuel Ratio 2025</h2>
-    <canvas id="fuelChart"></canvas>
-  </div>
-
-  <script>
-    const ctxFuel = document.getElementById('fuelChart').getContext('2d');
-    const fuelChart = new Chart(ctxFuel, {
-      type: 'bar',
-      data: {
-        labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Total'],
-        datasets: [
-          {
-            label: 'Plan',
-            data: [120, 110, 150, 100, 140, 130, 90, 80, 120, 100, 90, 110, 1340],
-            backgroundColor: '#4A90E2'
-          },
-          {
-            label: 'Aktual',
-            data: [115, 120, 145, 95, 138, 125, 92, 85, 118, 98, 88, 112, 1330],
-            backgroundColor: '#F77E70'
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: 'top',
-          },
-          tooltip: {
-            enabled: true
-          },
-          datalabels: {
-            anchor: 'end',
-            align: 'end',
-            color: '#000',
-            font: {
-              weight: 'bold'
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true
-          }
-        }
-      },
-      plugins: [ChartDataLabels]
-    });
   </script>
 
 </body>
