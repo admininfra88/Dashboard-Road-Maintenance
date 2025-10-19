@@ -2,109 +2,77 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard Road Maintenance</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: "Segoe UI", sans-serif;
-      background: #f3f4f6;
-      margin: 0;
+      font-family: Arial, sans-serif;
       padding: 20px;
+      background: #f5f5f5;
+    }
+    h2 {
       text-align: center;
     }
-    h1 {
-      margin-bottom: 30px;
-    }
-    .chart-container {
+    #chartContainer {
       width: 90%;
-      max-width: 1000px;
-      margin: auto;
-      background: white;
+      max-width: 900px;
+      margin: 30px auto;
+      background: #fff;
       padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
-
-  <h1>📊 Dashboard Road Maintenance</h1>
-  <div class="chart-container">
-    <canvas id="myChart"></canvas>
+  <h2>Dashboard Road Maintenance (Bar Chart)</h2>
+  <div id="chartContainer">
+    <canvas id="barChart"></canvas>
   </div>
 
   <script>
-    async function loadExcelAndRender() {
-      try {
-        // URL file Excel di repo GitHub (ganti dengan username & repo kamu)
-        const fileUrl = 'https://raw.githubusercontent.com/admininfra88/Dashboard-Road-Maintenance/main/Data1.xlsx';
+    const excelURL = 'https://raw.githubusercontent.com/admininfra88/Dashboard-Road-Maintenance/main/Data1.xlsx';
 
-        const response = await fetch(fileUrl);
-        const arrayBuffer = await response.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+    fetch(excelURL)
+      .then(response => response.arrayBuffer())
+      .then(data => {
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-        // Ambil sheet pertama
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
+        const labels = json.slice(1).map(row => row[0]);
+        const planData = json.slice(1).map(row => row[1]);
+        const actualData = json.slice(1).map(row => row[2]);
 
-        // Konversi ke JSON
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-        // Asumsikan baris pertama adalah header
-        const [header, ...rows] = jsonData;
-        const bulanIndex = header.indexOf('Bulan');
-        const planIndex = header.indexOf('Plan');
-        const aktualIndex = header.indexOf('Aktual');
-
-        const labels = [];
-        const planData = [];
-        const aktualData = [];
-
-        rows.forEach(row => {
-          labels.push(row[bulanIndex]);
-          planData.push(parseFloat(row[planIndex]) || 0);
-          aktualData.push(parseFloat(row[aktualIndex]) || 0);
-        });
-
-        // Buat grafik kombinasi
-        const ctx = document.getElementById('myChart').getContext('2d');
+        const ctx = document.getElementById('barChart').getContext('2d');
         new Chart(ctx, {
+          type: 'bar',
           data: {
             labels: labels,
             datasets: [
               {
-                type: 'line',
                 label: 'Plan',
                 data: planData,
-                borderColor: 'blue',
-                backgroundColor: 'blue',
-                borderWidth: 2,
-                tension: 0.3,
-                fill: false,
-                yAxisID: 'y'
+                backgroundColor: 'rgba(54, 162, 235, 0.7)',
               },
               {
-                type: 'bar',
                 label: 'Aktual',
-                data: aktualData,
-                backgroundColor: 'orange',
-                yAxisID: 'y'
+                data: actualData,
+                backgroundColor: 'rgba(255, 99, 132, 0.7)',
               }
             ]
           },
           options: {
             responsive: true,
             plugins: {
-              title: {
-                display: true,
-                text: 'Perbandingan Plan vs Aktual',
-                font: { size: 18 }
-              },
-              legend: {
-                display: true,
-                position: 'top'
+              legend: { position: 'top' },
+              tooltip: { enabled: true },
+              datalabels: {
+                anchor: 'end',
+                align: 'end',
+                color: '#000'
               }
             },
             scales: {
@@ -112,16 +80,25 @@
                 beginAtZero: true
               }
             }
-          }
+          },
+          plugins: [{
+            id: 'dataLabels',
+            afterDatasetsDraw(chart) {
+              const {ctx} = chart;
+              chart.data.datasets.forEach((dataset, i) => {
+                const meta = chart.getDatasetMeta(i);
+                meta.data.forEach((bar, index) => {
+                  const value = dataset.data[index];
+                  ctx.fillStyle = '#000';
+                  ctx.font = '12px Arial';
+                  ctx.textAlign = 'center';
+                  ctx.fillText(value, bar.x, bar.y - 5);
+                });
+              });
+            }
+          }]
         });
-
-      } catch (error) {
-        console.error('Gagal load file Excel:', error);
-        alert('Gagal memuat data Excel. Pastikan file Data1.xlsx sudah di-upload ke repo.');
-      }
-    }
-
-    loadExcelAndRender();
+      });
   </script>
 </body>
 </html>
