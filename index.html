@@ -3,64 +3,90 @@
 <head>
   <meta charset="UTF-8" />
   <title>Dashboard Road Maintenance</title>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
+      background: #f4f5f7;
+      margin: 0;
       padding: 20px;
-      background: #f5f5f5;
     }
-    h2 {
-      text-align: center;
-    }
-    #chartContainer {
-      width: 90%;
-      max-width: 900px;
-      margin: 30px auto;
+    .container {
+      max-width: 1000px;
+      margin: auto;
       background: #fff;
       padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    canvas {
+      max-height: 450px;
     }
   </style>
 </head>
 <body>
-  <h2>Dashboard Road Maintenance (Bar Chart)</h2>
-  <div id="chartContainer">
-    <canvas id="barChart"></canvas>
+  <div class="container">
+    <h1>📊 Dashboard Road Maintenance</h1>
+    <canvas id="myChart"></canvas>
   </div>
 
   <script>
-    const excelURL = 'https://raw.githubusercontent.com/admininfra88/Dashboard-Road-Maintenance/main/Data1.xlsx';
+    const fileUrl = 'https://raw.githubusercontent.com/admininfra88/Dashboard-Road-Maintenance/main/Data1.xlsx';
 
-    fetch(excelURL)
+    fetch(fileUrl)
       .then(response => response.arrayBuffer())
       .then(data => {
         const workbook = XLSX.read(data, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        const jsonData = XLSX.utils.sheet_to_json(sheet);
 
-        const labels = json.slice(1).map(row => row[0]);
-        const planData = json.slice(1).map(row => row[1]);
-        const actualData = json.slice(1).map(row => row[2]);
+        const labels = jsonData.map(row => row['Bulan']);
+        const planData = jsonData.map(row => Number(row['Plan']));
+        const aktualData = jsonData.map(row => Number(row['Aktual']));
+        const totalData = jsonData.map(row => Number(row['Plan']) + Number(row['Aktual']));
 
-        const ctx = document.getElementById('barChart').getContext('2d');
+        const ctx = document.getElementById('myChart').getContext('2d');
         new Chart(ctx, {
           type: 'bar',
           data: {
             labels: labels,
             datasets: [
               {
-                label: 'Plan',
-                data: planData,
-                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                label: 'Aktual',
+                data: aktualData,
+                backgroundColor: 'orange',
+                borderRadius: 5,
+                yAxisID: 'y'
               },
               {
-                label: 'Aktual',
-                data: actualData,
-                backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                label: 'Plan',
+                data: planData,
+                type: 'line',
+                borderColor: 'blue',
+                backgroundColor: 'blue',
+                borderWidth: 2,
+                tension: 0.3,
+                yAxisID: 'y'
+              },
+              {
+                label: 'Total (Plan+Aktual)',
+                data: totalData,
+                type: 'bar',
+                backgroundColor: 'transparent',
+                datalabels: {
+                  display: true,
+                  color: 'black',
+                  anchor: 'end',
+                  align: 'bottom',
+                  formatter: value => value.toLocaleString()
+                }
               }
             ]
           },
@@ -68,11 +94,16 @@
             responsive: true,
             plugins: {
               legend: { position: 'top' },
-              tooltip: { enabled: true },
+              title: {
+                display: true,
+                text: 'Perbandingan Plan vs Aktual (dengan Total)'
+              },
               datalabels: {
+                display: (ctx) => ctx.dataset.label !== 'Total (Plan+Aktual)',
+                color: '#000',
                 anchor: 'end',
-                align: 'end',
-                color: '#000'
+                align: 'top',
+                formatter: value => value.toLocaleString()
               }
             },
             scales: {
@@ -81,22 +112,7 @@
               }
             }
           },
-          plugins: [{
-            id: 'dataLabels',
-            afterDatasetsDraw(chart) {
-              const {ctx} = chart;
-              chart.data.datasets.forEach((dataset, i) => {
-                const meta = chart.getDatasetMeta(i);
-                meta.data.forEach((bar, index) => {
-                  const value = dataset.data[index];
-                  ctx.fillStyle = '#000';
-                  ctx.font = '12px Arial';
-                  ctx.textAlign = 'center';
-                  ctx.fillText(value, bar.x, bar.y - 5);
-                });
-              });
-            }
-          }]
+          plugins: [ChartDataLabels]
         });
       });
   </script>
