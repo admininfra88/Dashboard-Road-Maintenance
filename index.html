@@ -2,68 +2,62 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard Cost Ratio Road Maintenance 2025</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
+      margin: 20px;
       background: #f4f6f8;
     }
-    h2 {
+    h1 {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 30px;
     }
     .chart-container {
-      background: white;
+      width: 90%;
+      max-width: 1000px;
+      margin: 20px auto;
+      background: #fff;
+      padding: 20px;
       border-radius: 10px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      padding: 20px;
-      margin-bottom: 40px;
-      max-width: 1000px;
-      margin-left: auto;
-      margin-right: auto;
     }
     canvas {
-      max-width: 100%;
+      width: 100% !important;
+      height: 400px !important;
     }
   </style>
 </head>
 <body>
 
-  <h2>📊 Dashboard Cost Ratio Road Maintenance 2025</h2>
-
+  <h1>Dashboard Cost Ratio Road Maintenance 2025</h1>
   <div class="chart-container">
-    <canvas id="monthlyChart"></canvas>
-  </div>
-
-  <div class="chart-container">
-    <canvas id="totalChart"></canvas>
+    <canvas id="barChart"></canvas>
   </div>
 
   <script>
-    const excelUrl = 'https://raw.githubusercontent.com/admininfra88/Dashboard-Road-Maintenance/main/Data1.xlsx';
+    const fileUrl = "https://raw.githubusercontent.com/admininfra88/Dashboard-Road-Maintenance/main/Data1.xlsx";
 
-    async function fetchExcelData(url) {
-      const response = await fetch(url);
+    async function loadExcelData() {
+      const response = await fetch(fileUrl);
       const arrayBuffer = await response.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const workbook = XLSX.read(arrayBuffer, { type: "array" });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
-      return XLSX.utils.sheet_to_json(sheet);
+      const json = XLSX.utils.sheet_to_json(sheet);
+
+      const labels = json.map(row => row['bulan']);
+      const planData = json.map(row => row['Plan']);
+      const aktualData = json.map(row => row['Aktual']);
+
+      renderBarChart(labels, planData, aktualData);
     }
 
-    function renderCharts(data) {
-      const labels = data.map(row => row['Bulan']);
-      const planData = data.map(row => Number(row['Plan']));
-      const aktualData = data.map(row => Number(row['Aktual']));
-
-      // Grafik Bulanan
-      const ctx1 = document.getElementById('monthlyChart').getContext('2d');
-      new Chart(ctx1, {
+    function renderBarChart(labels, planData, aktualData) {
+      const ctx = document.getElementById('barChart').getContext('2d');
+      new Chart(ctx, {
         type: 'bar',
         data: {
           labels: labels,
@@ -71,27 +65,33 @@
             {
               label: 'Plan',
               data: planData,
-              backgroundColor: 'blue'
+              backgroundColor: 'rgba(54, 162, 235, 0.7)',
             },
             {
               label: 'Aktual',
               data: aktualData,
-              backgroundColor: 'orange'
+              backgroundColor: 'rgba(255, 99, 132, 0.7)',
             }
           ]
         },
         options: {
           responsive: true,
           plugins: {
+            title: {
+              display: true,
+              text: 'Dashboard Cost Ratio Road Maintenance 2025',
+              font: { size: 18 }
+            },
             legend: {
               position: 'top'
             },
-            title: {
-              display: true,
-              text: 'Perbandingan Plan vs Aktual (Bulanan)'
+            tooltip: {
+              enabled: true
             },
             datalabels: {
-              display: true
+              anchor: 'end',
+              align: 'top',
+              formatter: Math.round
             }
           },
           scales: {
@@ -99,45 +99,16 @@
               beginAtZero: true
             }
           }
-        }
-      });
-
-      // Grafik Total
-      const totalPlan = planData.reduce((a,b) => a+b, 0);
-      const totalAktual = aktualData.reduce((a,b) => a+b, 0);
-
-      const ctx2 = document.getElementById('totalChart').getContext('2d');
-      new Chart(ctx2, {
-        type: 'bar',
-        data: {
-          labels: ['Total Plan', 'Total Aktual'],
-          datasets: [
-            {
-              label: 'Total',
-              data: [totalPlan, totalAktual],
-              backgroundColor: ['blue', 'orange']
-            }
-          ]
         },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { display: false },
-            title: {
-              display: true,
-              text: 'Total Cost Ratio Plan vs Aktual 2025'
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }
+        plugins: [ChartDataLabels]
       });
     }
 
-    fetchExcelData(excelUrl).then(renderCharts);
+    // Load plugin Chart.js DataLabels
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0';
+    script.onload = loadExcelData;
+    document.head.appendChild(script);
   </script>
 
 </body>
