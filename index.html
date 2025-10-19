@@ -67,14 +67,14 @@
 
       jsonData.forEach(row => {
         bulan.push(row['Bulan']);
-        planCost.push(row['Plan']);
-        actualCost.push(row['Actual']);
-        planFuel.push(row['FR_Plan']);
-        actualFuel.push(row['FR_Actual']);
+        planCost.push(row['Plan_Cost']);
+        actualCost.push(row['Actual_Cost']);
+        planFuel.push(row['Plan_Fuel']);
+        actualFuel.push(row['Actual_Fuel']);
       });
 
       renderCostChart(bulan, planCost, actualCost);
-      renderFuelChart(bulan, frplanFuel, fractualFuel);
+      renderFuelChart(bulan, planFuel, actualFuel);
     })
     .catch(error => console.error('Gagal membaca file Excel:', error));
 
@@ -130,4 +130,3 @@
 </script>
 </body>
 </html>
-
