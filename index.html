@@ -5,6 +5,8 @@
   <title>Dashboard Road Maintenance</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- ✅ Tambahkan plugin Chart.js DataLabels -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -26,7 +28,9 @@
   </style>
 </head>
 <body>
-  <h2>Cost Ratio Road Maintenance 2025 </h2>
+
+  <!-- ===================== Grafik Cost Ratio 2025 ===================== -->
+  <h2>Cost Ratio Road Maintenance 2025</h2>
   <div id="chartContainer">
     <canvas id="barChart"></canvas>
   </div>
@@ -69,11 +73,6 @@
             plugins: {
               legend: { position: 'top' },
               tooltip: { enabled: true },
-              datalabels: {
-                anchor: 'end',
-                align: 'end',
-                color: '#000'
-              }
             },
             scales: {
               y: {
@@ -100,6 +99,59 @@
         });
       });
   </script>
+
+  <!-- ===================== Grafik Fuel Ratio 2025 ===================== -->
+  <div id="chartContainer">
+    <h2 style="font-weight: bold;">Fuel Ratio 2025</h2>
+    <canvas id="fuelChart"></canvas>
+  </div>
+
+  <script>
+    const ctxFuel = document.getElementById('fuelChart').getContext('2d');
+    const fuelChart = new Chart(ctxFuel, {
+      type: 'bar',
+      data: {
+        labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Total'],
+        datasets: [
+          {
+            label: 'Plan',
+            data: [120, 110, 150, 100, 140, 130, 90, 80, 120, 100, 90, 110, 1340],
+            backgroundColor: '#4A90E2'
+          },
+          {
+            label: 'Aktual',
+            data: [115, 120, 145, 95, 138, 125, 92, 85, 118, 98, 88, 112, 1330],
+            backgroundColor: '#F77E70'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          tooltip: {
+            enabled: true
+          },
+          datalabels: {
+            anchor: 'end',
+            align: 'end',
+            color: '#000',
+            font: {
+              weight: 'bold'
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      },
+      plugins: [ChartDataLabels]
+    });
+  </script>
+
 </body>
 </html>
-
