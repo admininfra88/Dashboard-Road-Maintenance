@@ -5,10 +5,10 @@
   <title>Dashboard Cost Ratio Road Maintenance 2025</title>
 
   <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
   <!-- Chart.js Data Labels Plugin -->
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 
   <!-- XLSX for reading Excel -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -48,6 +48,9 @@
   </div>
 
   <script>
+    // ⬇️ Kunci utama: register plugin dulu sebelum pakai
+    Chart.register(ChartDataLabels);
+
     const fileUrl = "https://raw.githubusercontent.com/admininfra88/Dashboard-Road-Maintenance/main/Data1.xlsx";
 
     async function loadExcelData() {
@@ -59,8 +62,8 @@
       const json = XLSX.utils.sheet_to_json(sheet);
 
       const labels = json.map(row => row['bulan']);
-      const planData = json.map(row => row['Plan']);
-      const aktualData = json.map(row => row['Aktual']);
+      const planData = json.map(row => Number(row['Plan']));
+      const aktualData = json.map(row => Number(row['Aktual']));
 
       renderBarChart(labels, planData, aktualData);
     }
@@ -103,7 +106,8 @@
                 weight: 'bold'
               },
               formatter: function(value) {
-                return value;
+                if (value === 0 || isNaN(value)) return '';
+                return value.toLocaleString('id-ID');
               }
             }
           },
@@ -113,7 +117,7 @@
             }
           }
         },
-        plugins: [ChartDataLabels] // ini kunci supaya angka muncul
+        plugins: [ChartDataLabels]
       });
     }
 
