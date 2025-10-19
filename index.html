@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard Road Maintenance 2025</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
     body {
@@ -21,113 +22,130 @@
     }
     .chart-card {
       background: white;
-      padding: 10px 20px;
+      padding: 15px 20px;
       border-radius: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       flex: 1 1 48%;
       min-width: 400px;
     }
     h3 {
       text-align: center;
+      margin-bottom: 15px;
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <div class="chart-card">
-      <h3>Cost Ratio Road Maintenance 2025</h3>
-      <canvas id="costChart"></canvas>
-    </div>
-    <div class="chart-card">
-      <h3>Fuel Ratio 2025</h3>
-      <canvas id="fuelChart"></canvas>
-    </div>
+<div class="container">
+  <div class="chart-card">
+    <h3>Cost Ratio Road Maintenance 2025</h3>
+    <canvas id="costChart"></canvas>
   </div>
+  <div class="chart-card">
+    <h3>Fuel Ratio 2025</h3>
+    <canvas id="fuelChart"></canvas>
+  </div>
+</div>
 
 <script>
-  const excelUrl = 'https://github.com/admininfra88/Dashboard-Road-Maintenance/blob/main/Data1.xlsx';
+const excelUrl = 'https://raw.githubusercontent.com/admininfra88/Dashboard-Road-Maintenance/main/Data1.xlsx';
 
-  let costChart, fuelChart;
+let costChart, fuelChart;
 
-  // Ambil file Excel langsung dari URL repo
-  fetch(excelUrl)
-    .then(response => response.arrayBuffer())
-    .then(data => {
-      const workbook = XLSX.read(data, {type: 'array'});
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+fetch(excelUrl)
+  .then(response => response.arrayBuffer())
+  .then(data => {
+    const workbook = XLSX.read(data, {type: 'array'});
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      const bulan = [];
-      const planCost = [];
-      const actualCost = [];
-      const planFuel = [];
-      const actualFuel = [];
+    const bulan = [];
+    const planCost = [];
+    const actualCost = [];
+    const planFuel = [];
+    const actualFuel = [];
 
-      jsonData.forEach(row => {
-        bulan.push(row['Bulan']);
-        planCost.push(row['Plan_Cost']);
-        actualCost.push(row['Actual_Cost']);
-        planFuel.push(row['Plan_Fuel']);
-        actualFuel.push(row['Actual_Fuel']);
-      });
-
-      renderCostChart(bulan, planCost, actualCost);
-      renderFuelChart(bulan, planFuel, actualFuel);
-    })
-    .catch(error => console.error('Gagal membaca file Excel:', error));
-
-  function renderCostChart(labels, planData, actualData) {
-    if (costChart) costChart.destroy();
-    const ctx = document.getElementById('costChart').getContext('2d');
-    costChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [
-          { label: 'Plan', data: planData, backgroundColor: 'rgba(54, 162, 235, 0.7)' },
-          { label: 'Actual', data: actualData, backgroundColor: 'rgba(255, 99, 132, 0.7)' }
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: 'top' },
-          tooltip: { enabled: true }
-        },
-        scales: {
-          y: { beginAtZero: true }
-        }
-      }
+    jsonData.forEach(row => {
+      bulan.push(row['Bulan']);
+      planCost.push(Number(row['Plan_Cost']));
+      actualCost.push(Number(row['Actual_Cost']));
+      planFuel.push(Number(row['Plan_Fuel']));
+      actualFuel.push(Number(row['Actual_Fuel']));
     });
-  }
 
-  function renderFuelChart(labels, planData, actualData) {
-    if (fuelChart) fuelChart.destroy();
-    const ctx = document.getElementById('fuelChart').getContext('2d');
-    fuelChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [
-          { label: 'Plan', data: planData, backgroundColor: 'rgba(54, 162, 235, 0.7)' },
-          { label: 'Actual', data: actualData, backgroundColor: 'rgba(255, 99, 132, 0.7)' }
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: 'top' },
-          tooltip: { enabled: true }
-        },
-        scales: {
-          y: { beginAtZero: true }
+    renderCostChart(bulan, planCost, actualCost);
+    renderFuelChart(bulan, planFuel, actualFuel);
+  })
+  .catch(error => console.error('Gagal membaca file Excel:', error));
+
+function renderCostChart(labels, planData, actualData) {
+  if (costChart) costChart.destroy();
+  const ctx = document.getElementById('costChart').getContext('2d');
+  costChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Plan', data: planData, backgroundColor: 'rgba(54, 162, 235, 0.7)', barPercentage: 0.5, categoryPercentage: 0.5 },
+        { label: 'Actual', data: actualData, backgroundColor: 'rgba(255, 99, 132, 0.7)', barPercentage: 0.5, categoryPercentage: 0.5 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: { enabled: true },
+        datalabels: {
+          anchor: 'end',
+          align: 'end',
+          color: '#000',
+          font: { weight: 'bold' },
+          formatter: value => value
         }
+      },
+      scales: {
+        y: { beginAtZero: true },
+        x: { stacked: false }
       }
-    });
-  }
+    },
+    plugins: [ChartDataLabels]
+  });
+}
+
+function renderFuelChart(labels, planData, actualData) {
+  if (fuelChart) fuelChart.destroy();
+  const ctx = document.getElementById('fuelChart').getContext('2d');
+  fuelChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Plan', data: planData, backgroundColor: 'rgba(54, 162, 235, 0.7)', barPercentage: 0.5, categoryPercentage: 0.5 },
+        { label: 'Actual', data: actualData, backgroundColor: 'rgba(255, 99, 132, 0.7)', barPercentage: 0.5, categoryPercentage: 0.5 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: { enabled: true },
+        datalabels: {
+          anchor: 'end',
+          align: 'end',
+          color: '#000',
+          font: { weight: 'bold' },
+          formatter: value => value
+        }
+      },
+      scales: {
+        y: { beginAtZero: true },
+        x: { stacked: false }
+      }
+    },
+    plugins: [ChartDataLabels]
+  });
+}
 </script>
 </body>
 </html>
-
