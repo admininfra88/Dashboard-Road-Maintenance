@@ -5,7 +5,6 @@
   <title>Dashboard Road Maintenance</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -15,7 +14,7 @@
     h2 {
       text-align: center;
     }
-    .chart-box {
+    #chartContainer {
       width: 90%;
       max-width: 900px;
       margin: 30px auto;
@@ -27,17 +26,9 @@
   </style>
 </head>
 <body>
-
-  <!-- ===================== Grafik Cost Ratio 2025 ===================== -->
-  <h2>Cost Ratio Road Maintenance 2025</h2>
-  <div class="chart-box">
-    <canvas id="costChart" style="width: 100%; height: 350px;"></canvas>
-  </div>
-
-  <!-- ===================== Grafik Fuel Ratio 2025 ===================== -->
-  <h2>Fuel Ratio 2025</h2>
-  <div class="chart-box">
-    <canvas id="fuelChart"></canvas>
+  <h2>Cost Ratio Road Maintenance 2025 </h2>
+  <div id="chartContainer">
+    <canvas id="barChart"></canvas>
   </div>
 
   <script>
@@ -47,29 +38,28 @@
       .then(response => response.arrayBuffer())
       .then(data => {
         const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-        // ===================== Sheet 1: Cost Ratio =====================
-        const sheetCost = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonCost = XLSX.utils.sheet_to_json(sheetCost, { header: 1 });
+        const labels = json.slice(1).map(row => row[0]);
+        const planData = json.slice(1).map(row => row[1]);
+        const actualData = json.slice(1).map(row => row[2]);
 
-        const labelsCost = jsonCost.slice(1).map(row => row[0]);
-        const planCost = jsonCost.slice(1).map(row => row[1]);
-        const actualCost = jsonCost.slice(1).map(row => row[2]);
-
-        const ctxCost = document.getElementById('costChart').getContext('2d');
-        new Chart(ctxCost, {
+        const ctx = document.getElementById('barChart').getContext('2d');
+        new Chart(ctx, {
           type: 'bar',
           data: {
-            labels: labelsCost,
+            labels: labels,
             datasets: [
               {
                 label: 'Plan',
-                data: planCost,
+                data: planData,
                 backgroundColor: 'rgba(54, 162, 235, 0.7)',
               },
               {
                 label: 'Aktual',
-                data: actualCost,
+                data: actualData,
                 backgroundColor: 'rgba(255, 132, 99, 0.7)',
               }
             ]
@@ -82,18 +72,36 @@
               datalabels: {
                 anchor: 'end',
                 align: 'end',
-                color: '#000',
-                font: {
-                  weight: 'bold'
-                }
+                color: '#000'
               }
             },
             scales: {
-              y: { beginAtZero: true }
+              y: {
+                beginAtZero: true
+              }
             }
           },
-          plugins: [ChartDataLabels]
+          plugins: [{
+            id: 'dataLabels',
+            afterDatasetsDraw(chart) {
+              const {ctx} = chart;
+              chart.data.datasets.forEach((dataset, i) => {
+                const meta = chart.getDatasetMeta(i);
+                meta.data.forEach((bar, index) => {
+                  const value = dataset.data[index];
+                  ctx.fillStyle = '#000';
+                  ctx.font = '12px Arial';
+                  ctx.textAlign = 'center';
+                  ctx.fillText(value, bar.x, bar.y - 5);
+                });
+              });
+            }
+          }]
         });
+      });
+  </script>
+</body>
+</html>
 
         // ===================== Sheet 2: Fuel Ratio =====================
         const sheetFuel = workbook.Sheets[workbook.SheetNames[1]];
@@ -146,4 +154,5 @@
 
 </body>
 </html>
+
 
