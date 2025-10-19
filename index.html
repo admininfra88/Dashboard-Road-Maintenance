@@ -1,128 +1,165 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Dashboard Cost Ratio Road Maintenance 2025</title>
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
-  <!-- Chart.js Data Labels Plugin -->
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
-
-  <!-- XLSX for reading Excel -->
+  <title>Dashboard Road Maintenance</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      margin: 0;
       padding: 20px;
+      background: #f5f5f5;
     }
-    h1 {
+    h2 {
       text-align: center;
-      margin-bottom: 30px;
     }
     .chart-container {
       width: 90%;
       max-width: 1000px;
-      margin: 20px auto;
-      background: white;
+      margin: 30px auto;
+      background: #fff;
       padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    canvas {
-      width: 100% !important;
-      height: 400px !important;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
+  <h2>📊 Dashboard Road Maintenance</h2>
 
-  <h1>Dashboard Cost Ratio Road Maintenance 2025</h1>
-
+  <!-- Grafik Bulanan -->
   <div class="chart-container">
     <canvas id="barChart"></canvas>
   </div>
 
+  <!-- Grafik Total Tahunan -->
+  <div class="chart-container">
+    <canvas id="totalChart"></canvas>
+  </div>
+
   <script>
-    // ⬇️ Kunci utama: register plugin dulu sebelum pakai
-    Chart.register(ChartDataLabels);
+    const excelURL = 'https://raw.githubusercontent.com/admininfra88/Dashboard-Road-Maintenance/main/Data1.xlsx';
 
-    const fileUrl = "https://raw.githubusercontent.com/admininfra88/Dashboard-Road-Maintenance/main/Data1.xlsx";
+    fetch(excelURL)
+      .then(response => response.arrayBuffer())
+      .then(data => {
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-    async function loadExcelData() {
-      const response = await fetch(fileUrl);
-      const arrayBuffer = await response.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer, { type: "array" });
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      const json = XLSX.utils.sheet_to_json(sheet);
+        const labels = json.slice(1).map(row => row[0]);
+        const planData = json.slice(1).map(row => row[1]);
+        const actualData = json.slice(1).map(row => row[2]);
 
-      const labels = json.map(row => row['bulan']);
-      const planData = json.map(row => Number(row['Plan']));
-      const aktualData = json.map(row => Number(row['Aktual']));
-
-      renderBarChart(labels, planData, aktualData);
-    }
-
-    function renderBarChart(labels, planData, aktualData) {
-      const ctx = document.getElementById('barChart').getContext('2d');
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: 'Plan',
-              data: planData,
-              backgroundColor: 'rgba(54, 162, 235, 0.7)',
-            },
-            {
-              label: 'Aktual',
-              data: aktualData,
-              backgroundColor: 'rgba(255, 99, 132, 0.7)',
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            title: {
-              display: true,
-              text: 'Dashboard Cost Ratio Road Maintenance 2025',
-              font: { size: 18 }
-            },
-            legend: {
-              position: 'top'
-            },
-            datalabels: {
-              anchor: 'end',
-              align: 'top',
-              color: '#000',
-              font: {
-                weight: 'bold'
+        // === Grafik Bulanan ===
+        const ctx = document.getElementById('barChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Plan',
+                data: planData,
+                backgroundColor: 'rgba(0, 102, 255, 0.8)',
               },
-              formatter: function(value) {
-                if (value === 0 || isNaN(value)) return '';
-                return value.toLocaleString('id-ID');
+              {
+                label: 'Aktual',
+                data: actualData,
+                backgroundColor: 'rgba(255, 153, 0, 0.8)',
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: 'top' },
+              tooltip: { enabled: true },
+              title: {
+                display: true,
+                text: 'Perbandingan Plan vs Aktual (Bulanan)'
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true
               }
             }
           },
-          scales: {
-            y: {
-              beginAtZero: true
+          plugins: [{
+            id: 'dataLabels',
+            afterDatasetsDraw(chart) {
+              const {ctx} = chart;
+              chart.data.datasets.forEach((dataset, i) => {
+                const meta = chart.getDatasetMeta(i);
+                meta.data.forEach((bar, index) => {
+                  const value = dataset.data[index];
+                  ctx.fillStyle = '#000';
+                  ctx.font = '12px Arial';
+                  ctx.textAlign = 'center';
+                  ctx.fillText(value, bar.x, bar.y - 5);
+                });
+              });
             }
-          }
-        },
-        plugins: [ChartDataLabels]
+          }]
+        });
+
+        // === Grafik Total Tahunan ===
+        const totalPlan = planData.reduce((a, b) => a + Number(b || 0), 0);
+        const totalActual = actualData.reduce((a, b) => a + Number(b || 0), 0);
+
+        const ctxTotal = document.getElementById('totalChart').getContext('2d');
+        new Chart(ctxTotal, {
+          type: 'bar',
+          data: {
+            labels: ['Total Plan', 'Total Aktual'],
+            datasets: [
+              {
+                label: 'Total',
+                data: [totalPlan, totalActual],
+                backgroundColor: [
+                  'rgba(0, 102, 255, 0.8)',
+                  'rgba(255, 153, 0, 0.8)'
+                ]
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false },
+              tooltip: { enabled: true },
+              title: {
+                display: true,
+                text: 'Total Plan vs Total Aktual (Tahunan)'
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          },
+          plugins: [{
+            id: 'dataLabelsTotal',
+            afterDatasetsDraw(chart) {
+              const {ctx} = chart;
+              chart.data.datasets.forEach((dataset, i) => {
+                const meta = chart.getDatasetMeta(i);
+                meta.data.forEach((bar, index) => {
+                  const value = dataset.data[index];
+                  ctx.fillStyle = '#000';
+                  ctx.font = '13px Arial';
+                  ctx.textAlign = 'center';
+                  ctx.fillText(value, bar.x, bar.y - 5);
+                });
+              });
+            }
+          }]
+        });
       });
-    }
-
-    loadExcelData();
   </script>
-
 </body>
 </html>
