@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Cost Ratio Road Maintenance</title>
+
+  <!-- SheetJS -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Chart.js v3 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+  <!-- Plugin datalabels -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f5f6fa;
+    }
+    h1 { text-align: center; }
+    #chartContainer {
+      width: 90%;
+      margin: 30px auto;
+    }
+    table {
+      border-collapse: collapse;
+      margin: 0 auto;
+      background: white;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px 12px;
+    }
+    th { background: #eee; }
+  </style>
+</head>
+<body>
+  <h1>📊 Dashboard Cost Ratio Road Maintenance</h1>
+  <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" />
+  
+  <div id="chartContainer">
+    <canvas id="myChart"></canvas>
+  </div>
+
+  <table id="dataTable"></table>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const dataTable = document.getElementById('dataTable');
+    let chart;
+
+    fileInput.addEventListener('change', handleFile);
+
+    function handleFile(event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        renderTable(jsonData);
+        renderChart(jsonData, sheetName);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function renderTable(data) {
+      let html = '<tr>';
+      data[0].forEach(h => html += `<th>${h}</th>`);
+      html += '</tr>';
+      for (let i = 1; i < data.length; i++) {
+        html += '<tr>';
+        data[i].forEach(c => html += `<td>${c}</td>`);
+        html += '</tr>';
+      }
+      dataTable.innerHTML = html;
+    }
+
+    function renderChart(data, sheetName) {
+      const labels = data.slice(1).map(row => row[0]);
+      const penjualan = data.slice(1).map(row => Number(row[1]) || 0);
+      const pengeluaran = data.slice(1).map(row => Number(row[2]) || 0);
+
+      // 🔸 Ambil judul dari baris pertama kolom pertama (jika ada)
+      // Contoh: di cell A1 tertulis "Grafik Penjualan vs Pengeluaran"
+      const customTitle = data[0][0] && isNaN(data[0][0]) ? data[0][0] : `Dashboard: ${sheetName}`;
+
+      const ctx = document.getElementById('myChart').getContext('2d');
+
+      if (chart) chart.destroy();
+
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: data[0][1] || 'Penjualan',
+              data: penjualan,
+              backgroundColor: '#4CAF50'
+            },
+            {
+              label: data[0][2] || 'Pengeluaran',
+              data: pengeluaran,
+              backgroundColor: '#F44336'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'top' },
+            title: { 
+              display: true, 
+              text: customTitle 
+            },
+            datalabels: {
+              anchor: 'end',
+              align: 'end',
+              color: '#000',
+              font: { weight: 'bold' },
+              formatter: (value) => value.toLocaleString('id-ID')
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
+      });
+    }
+  </script>
+</body>
+</html>
