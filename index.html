@@ -16,7 +16,7 @@
     }
     #chartContainer {
       width: 90%;
-      max-width: 900px;
+      max-width: 1000px;
       margin: 30px auto;
       background: #fff;
       padding: 20px;
@@ -26,7 +26,7 @@
   </style>
 </head>
 <body>
-  <h2>Dashboard Road Maintenance (Bar Chart)</h2>
+  <h2>📊 Dashboard Road Maintenance</h2>
   <div id="chartContainer">
     <canvas id="barChart"></canvas>
   </div>
@@ -42,6 +42,7 @@
         const sheet = workbook.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
+        // Ambil data dari Excel
         const labels = json.slice(1).map(row => row[0]);
         const planData = json.slice(1).map(row => row[1]);
         const actualData = json.slice(1).map(row => row[2]);
@@ -55,12 +56,12 @@
               {
                 label: 'Plan',
                 data: planData,
-                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                backgroundColor: 'rgba(0, 102, 255, 0.8)',
               },
               {
                 label: 'Aktual',
                 data: actualData,
-                backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                backgroundColor: 'rgba(255, 153, 0, 0.8)',
               }
             ]
           },
@@ -69,11 +70,6 @@
             plugins: {
               legend: { position: 'top' },
               tooltip: { enabled: true },
-              datalabels: {
-                anchor: 'end',
-                align: 'end',
-                color: '#000'
-              }
             },
             scales: {
               y: {
