@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard Road Maintenance 2025</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     body {
@@ -16,13 +17,9 @@
       text-align: center;
       margin-bottom: 10px;
     }
-    #fileInput {
-      display: block;
-      margin: 0 auto 20px auto;
-    }
     .dashboard {
       display: grid;
-      grid-template-columns: 1fr 1fr; /* 2 kolom: kiri = Cost, kanan = Fuel */
+      grid-template-columns: 1fr 1fr; /* kiri-kanan */
       gap: 20px;
       max-width: 1800px;
       margin: 0 auto;
@@ -41,8 +38,6 @@
 </head>
 <body>
 
-  <input type="file" id="fileInput" accept=".xlsx" />
-
   <div class="dashboard">
     <div class="chart-container">
       <h2>Cost Ratio Road Maintenance 2025</h2>
@@ -55,85 +50,98 @@
   </div>
 
   <script>
-    const fileInput = document.getElementById('fileInput');
+    const EXCEL_URL = 'https://admininfra88.github.io/Dashboard-Road-Maintenance/Data1.xlsx';
+
     let costChart, fuelChart;
 
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        const data = new Uint8Array(evt.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet);
+    async function loadExcelData() {
+      const response = await fetch(EXCEL_URL);
+      const arrayBuffer = await response.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet);
+      renderCharts(json);
+    }
 
-        // Ambil data kolom Excel
-        const labels = json.map(row => row.Bulan);
-        const planCost = json.map(row => row['Plan Cost']);
-        const actualCost = json.map(row => row['Aktual Cost']);
-        const planFuel = json.map(row => row['Plan Fuel']);
-        const actualFuel = json.map(row => row['Aktual Fuel']);
+    function renderCharts(data) {
+      const labels = data.map(row => row.Bulan);
+      const planCost = data.map(row => row['Plan Cost']);
+      const actualCost = data.map(row => row['Aktual Cost']);
+      const planFuel = data.map(row => row['Plan Fuel']);
+      const actualFuel = data.map(row => row['Aktual Fuel']);
 
-        // Hancurkan chart lama agar tidak dobel
-        if (costChart) costChart.destroy();
-        if (fuelChart) fuelChart.destroy();
+      if (costChart) costChart.destroy();
+      if (fuelChart) fuelChart.destroy();
 
-        // === Cost Chart ===
-        costChart = new Chart(document.getElementById('costChart'), {
-          type: 'bar',
-          data: {
-            labels: labels,
-            datasets: [
-              {
-                label: 'Plan',
-                backgroundColor: '#2f65b9',
-                data: planCost,
-              },
-              {
-                label: 'Aktual',
-                backgroundColor: '#d34c4c',
-                data: actualCost,
+      const commonOptions = {
+        responsive: true,
+        plugins: {
+          legend: { position: 'top' },
+          datalabels: {
+            anchor: 'end',
+            align: 'end',
+            formatter: (val) => {
+              if (typeof val === 'number') {
+                return val % 1 === 0 ? val : val.toFixed(2);
               }
-            ]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: { position: 'top' }
+              return val;
             },
-            scales: { y: { beginAtZero: true } }
+            color: '#000',
+            font: { weight: 'bold' }
           }
-        });
-
-        // === Fuel Chart ===
-        fuelChart = new Chart(document.getElementById('fuelChart'), {
-          type: 'bar',
-          data: {
-            labels: labels,
-            datasets: [
-              {
-                label: 'Plan',
-                backgroundColor: '#2f65b9',
-                data: planFuel,
-              },
-              {
-                label: 'Aktual',
-                backgroundColor: '#d34c4c',
-                data: actualFuel,
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: { position: 'top' }
-            },
-            scales: { y: { beginAtZero: true } }
-          }
-        });
+        },
+        scales: {
+          y: { beginAtZero: true }
+        }
       };
-      reader.readAsArrayBuffer(file);
-    });
+
+      // === Cost Chart ===
+      costChart = new Chart(document.getElementById('costChart'), {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Plan',
+              backgroundColor: '#2f65b9',
+              data: planCost,
+            },
+            {
+              label: 'Aktual',
+              backgroundColor: '#d34c4c',
+              data: actualCost,
+            }
+          ]
+        },
+        options: commonOptions,
+        plugins: [ChartDataLabels]
+      });
+
+      // === Fuel Chart ===
+      fuelChart = new Chart(document.getElementById('fuelChart'), {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Plan',
+              backgroundColor: '#2f65b9',
+              data: planFuel,
+            },
+            {
+              label: 'Aktual',
+              backgroundColor: '#d34c4c',
+              data: actualFuel,
+            }
+          ]
+        },
+        options: commonOptions,
+        plugins: [ChartDataLabels]
+      });
+    }
+
+    // Load data saat halaman dibuka
+    loadExcelData();
   </script>
 
 </body>
